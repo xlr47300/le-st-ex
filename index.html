@@ -288,11 +288,71 @@
       font-weight: 300;
       text-align: center;
     }
-    .menu-section { padding: 64px 20px; }
-    .menu-section:nth-child(odd) { background: #FAF7F2; }
-    .menu-section:nth-child(even) { background: #F4EDE0; }
-    .menu-section.alt .rule-title::before { background: linear-gradient(to right, transparent, rgba(123,26,34,0.4)); }
-    .menu-section.alt .rule-title::after { background: linear-gradient(to left, transparent, rgba(123,26,34,0.4)); }
+    .menu-section {
+      background: linear-gradient(180deg, #FAF7F2 0%, #F4EDE0 100%);
+      padding: 64px 20px;
+    }
+    .menu-tabs-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      margin: 32px -20px 28px;
+      padding: 10px 20px;
+      background: rgba(250,247,242,0.94);
+      border-block: 1px solid rgba(226,212,188,0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .menu-tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .menu-tabs::-webkit-scrollbar { display: none; }
+    .menu-tab {
+      flex: 0 0 auto;
+      border: 1px solid rgba(192,131,74,0.28);
+      border-radius: 999px;
+      color: #6A5B4A;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.9px;
+      padding: 10px 16px;
+      text-transform: uppercase;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+    .menu-tab:hover,
+    .menu-tab:focus-visible {
+      border-color: rgba(192,131,74,0.7);
+      color: #2A2018;
+      transform: translateY(-1px);
+      outline: none;
+    }
+    .menu-tab.is-active {
+      border-color: var(--tab-accent, #C0834A);
+      background: var(--tab-accent, #C0834A);
+      color: #1C1814;
+    }
+    .menu-panel {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.24s ease, transform 0.24s ease;
+    }
+    .menu-panel.is-switching {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    .menu-count {
+      margin-top: 10px;
+      color: #8A7A68;
+      font-size: 12px;
+      font-style: italic;
+      font-weight: 300;
+      text-align: center;
+    }
     .dish-card {
       margin-bottom: 12px;
       border-left: 3px solid var(--accent, #C0834A);
@@ -977,7 +1037,7 @@
       const entries = [
         ["Accueil", "accueil", true],
         ["Menu du Jour", "menu-jour", isTrue(config.AfficherMenuJour)],
-        ...categories.map(category => [category, `carte-${slugify(category)}`, isTrue(config.AfficherCarte)]),
+        ["Carte", "carte-menu", isTrue(config.AfficherCarte) && categories.length > 0],
         ["Galerie", "galerie", isTrue(config.AfficherGalerie)],
         ["Horaires", "horaires", isTrue(config.AfficherHoraires)],
         ["Adresse", "adresse", true],
@@ -1060,30 +1120,65 @@
       const visible = rows.filter(row => isTrue(row.Disponible)).sort(byOrder);
       const categories = [...new Set(visible.map(row => row.Categorie).filter(Boolean))];
       const root = document.getElementById("carte");
-      root.innerHTML = categories.map((category, index) => {
+      if (!categories.length) {
+        root.innerHTML = "";
+        return categories;
+      }
+      root.innerHTML = `
+        <section class="menu-section" id="carte-menu">
+          <div class="container">
+            <div class="center">
+              <p class="eyebrow" id="menu-eyebrow">Notre sélection</p>
+              <div class="rule-title"><h2 class="title" id="menu-title"></h2></div>
+              <p class="menu-count" id="menu-count"></p>
+            </div>
+            <div class="menu-tabs-wrap">
+              <div class="menu-tabs" id="menu-tabs" role="tablist" aria-label="Catégories de la carte">
+                ${categories.map((category, index) => {
+                  const meta = CATEGORY_ACCENTS[category] || { accent: "#C0834A" };
+                  return `<button class="menu-tab ${index === 0 ? "is-active" : ""}" type="button" role="tab" aria-selected="${index === 0 ? "true" : "false"}" data-category="${escapeHtml(category)}" style="--tab-accent:${meta.accent}">${escapeHtml(category)}</button>`;
+                }).join("")}
+              </div>
+            </div>
+            <div class="menu-panel" id="menu-panel"></div>
+          </div>
+        </section>
+      `;
+      const renderCategory = category => {
+        const index = categories.indexOf(category);
         const meta = CATEGORY_ACCENTS[category] || { accent: "#C0834A", bg: index % 2 ? "#FAF7F2" : "#FFFFFF", eyebrow: "Notre sélection" };
         const items = visible.filter(row => row.Categorie === category);
-        return `
-          <section class="menu-section ${index % 2 ? "alt" : ""}" id="carte-${slugify(category)}">
-            <div class="container">
-              <div class="center" style="margin-bottom:36px">
-                <p class="eyebrow" style="color:${meta.accent}">${escapeHtml(meta.eyebrow)}</p>
-                <div class="rule-title"><h2 class="title">${escapeHtml(category)}</h2></div>
-              </div>
-              ${items.map(item => `
-                <article class="dish-card" style="--accent:${meta.accent};--card-bg:${meta.bg}">
-                  <div class="dish-head">
-                    <h3>${escapeHtml(item.Nom)}</h3>
-                    <span>${escapeHtml(item.Prix)}</span>
-                  </div>
-                  ${item.Description ? `<p>${escapeHtml(item.Description)}</p>` : ""}
-                  ${renderTags(item.Tags)}
-                </article>
-              `).join("")}
+        document.getElementById("menu-eyebrow").textContent = meta.eyebrow || "Notre sélection";
+        document.getElementById("menu-eyebrow").style.color = meta.accent;
+        document.getElementById("menu-title").textContent = category;
+        document.getElementById("menu-count").textContent = `${items.length} ${items.length > 1 ? "propositions" : "proposition"}`;
+        document.getElementById("menu-panel").innerHTML = items.map(item => `
+          <article class="dish-card" style="--accent:${meta.accent};--card-bg:${meta.bg}">
+            <div class="dish-head">
+              <h3>${escapeHtml(item.Nom)}</h3>
+              <span>${escapeHtml(item.Prix)}</span>
             </div>
-          </section>
-        `;
-      }).join("");
+            ${item.Description ? `<p>${escapeHtml(item.Description)}</p>` : ""}
+            ${renderTags(item.Tags)}
+          </article>
+        `).join("");
+      };
+      renderCategory(categories[0]);
+      document.getElementById("menu-tabs").addEventListener("click", event => {
+        const tab = event.target.closest("[data-category]");
+        if (!tab || tab.classList.contains("is-active")) return;
+        const panel = document.getElementById("menu-panel");
+        document.querySelectorAll(".menu-tab").forEach(button => {
+          const active = button === tab;
+          button.classList.toggle("is-active", active);
+          button.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        panel.classList.add("is-switching");
+        window.setTimeout(() => {
+          renderCategory(tab.dataset.category);
+          panel.classList.remove("is-switching");
+        }, 160);
+      });
       return categories;
     }
 
