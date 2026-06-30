@@ -260,12 +260,19 @@
       line-height: 1.6;
     }
     .daily-price {
+      padding: 20px 24px;
+      background: rgba(192,131,74,0.09);
+    }
+    .daily-formula {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding: 20px 24px;
-      background: rgba(192,131,74,0.09);
+    }
+    .daily-formula + .daily-formula {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(192,131,74,0.18);
     }
     .daily-price small {
       display: block;
@@ -280,6 +287,7 @@
       font-size: 30px;
       white-space: nowrap;
     }
+    .daily-formula-duo strong { font-size: 25px; }
     .daily-note {
       margin-top: 18px;
       color: #404A4A;
@@ -1094,7 +1102,11 @@
         return;
       }
       const grouped = TYPE_ORDER.map(type => [type, menuRows.filter(row => row.Type === type)]).filter(([, items]) => items.length);
-      const price = menuRows.find(row => row.PrixFormule)?.PrixFormule || "";
+      const formulaRow = menuRows.find(row => row.PrixFormule || row.TexteFormuleDuo || row.PrixFormuleDuo) || {};
+      const price = formulaRow.PrixFormule || "";
+      const duoText = formulaRow.TexteFormuleDuo || "";
+      const duoPrice = formulaRow.PrixFormuleDuo || "";
+      const showDuoFormula = duoText && duoPrice;
       card.innerHTML = grouped.map(([type, items]) => `
         <div class="daily-group">
           <p class="daily-group-label">· ${escapeHtml(type)}${items.length > 1 ? "s au choix" : ""} ·</p>
@@ -1107,11 +1119,22 @@
         </div>
       `).join("") + `
         <div class="daily-price">
-          <div>
-            <p class="daily-group-label">Formule complète</p>
-            <small>Boisson non incluse</small>
+          <div class="daily-formula">
+            <div>
+              <p class="daily-group-label">Formule complète</p>
+              <small>Boisson non incluse</small>
+            </div>
+            <strong>${escapeHtml(price)}</strong>
           </div>
-          <strong>${escapeHtml(price)}</strong>
+          ${showDuoFormula ? `
+            <div class="daily-formula daily-formula-duo">
+              <div>
+                <p class="daily-group-label">${escapeHtml(duoText)}</p>
+                <small>Selon les choix du jour</small>
+              </div>
+              <strong>${escapeHtml(duoPrice)}</strong>
+            </div>
+          ` : ""}
         </div>
       `;
     }
