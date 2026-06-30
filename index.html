@@ -560,12 +560,12 @@
     <section class="section about" id="about">
       <div class="container center">
         <div class="brand-line"><span class="eyebrow" id="about-brand">Le St Ex</span></div>
-        <h2>Un bistrot moderne<br><em>à l'âme chaleureuse</em></h2>
-        <p class="about-text">Ici, tout est fait maison. Chaque matin, nous sélectionnons les meilleurs produits du marché pour composer une carte courte, honnête et savoureuse. Un endroit où l'on aime revenir.</p>
+        <h2><span id="about-title">Un bistrot moderne</span><br><em id="about-subtitle">à l'âme chaleureuse</em></h2>
+        <p class="about-text" id="about-text">Ici, tout est fait maison. Chaque matin, nous sélectionnons les meilleurs produits du marché pour composer une carte courte, honnête et savoureuse. Un endroit où l'on aime revenir.</p>
         <div class="values">
-          <div class="value-card"><div class="star">✦</div><strong>Fait<br>Maison</strong></div>
-          <div class="value-card"><div class="star">✦</div><strong>Produits<br>Frais</strong></div>
-          <div class="value-card"><div class="star">✦</div><strong>Marché<br>Local</strong></div>
+          <div class="value-card"><div class="star">✦</div><strong id="about-card-1">Fait<br>Maison</strong></div>
+          <div class="value-card"><div class="star">✦</div><strong id="about-card-2">Produits<br>Frais</strong></div>
+          <div class="value-card"><div class="star">✦</div><strong id="about-card-3">Marché<br>Local</strong></div>
         </div>
       </div>
     </section>
@@ -736,12 +736,18 @@
       const url = String(value || "").trim();
       if (!url) return "";
       const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/) || url.match(/[?&]id=([^&]+)/);
-      if (driveMatch) return `https://drive.google.com/uc?export=view&id=${encodeURIComponent(driveMatch[1])}`;
+      if (driveMatch) return `https://drive.google.com/thumbnail?id=${encodeURIComponent(driveMatch[1])}&sz=w1200`;
       return url;
     }
 
     function formatAddress(address) {
       return escapeHtml(address).replace(/,\s*/g, "<br>");
+    }
+
+    function setHtmlText(id, value, fallback = "") {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = escapeHtml(value || fallback).replace(/\s*\|\s*/g, "<br>");
     }
 
     function normalizeDate(value) {
@@ -809,6 +815,12 @@
       document.title = `${name} - Bar Restaurant`;
       document.getElementById("hero-slogan").innerHTML = escapeHtml(slogan).replace(/\s*·\s*/, "<br>");
       document.getElementById("about-brand").textContent = name;
+      setHtmlText("about-title", params.AboutTitre, "Un bistrot moderne");
+      setHtmlText("about-subtitle", params.AboutSousTitre, "à l'âme chaleureuse");
+      setHtmlText("about-text", params.AboutTexte, "Ici, tout est fait maison. Chaque matin, nous sélectionnons les meilleurs produits du marché pour composer une carte courte, honnête et savoureuse. Un endroit où l'on aime revenir.");
+      setHtmlText("about-card-1", params.AboutCarte1, "Fait|Maison");
+      setHtmlText("about-card-2", params.AboutCarte2, "Produits|Frais");
+      setHtmlText("about-card-3", params.AboutCarte3, "Marché|Local");
       document.getElementById("address-text").innerHTML = formatAddress(address);
       document.getElementById("maps-link").href = maps;
       document.getElementById("address-phone").href = phoneHref(phone);
